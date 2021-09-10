@@ -8,11 +8,11 @@ if ($PSScriptRoot -eq $Null) {
     $PSScriptRoot = Split-Path $MyInvocation.MyCommand.Path -Parent
 }
 
-# 小提示：假如要调试这个工具的话，建议直接启动这个 powershell 脚本
-# 或者把 .bat 文件里的 -WindowStyle Hidden 去掉
-# 这样可以看到脚本的输出
+# Tip: If you want to debug this tool, it is recommended to start this powershell script directly
+# Or remove -WindowStyle Hidden from the .bat file
+# Removing that will allow you to see the output of the script
 
-### 编译步骤
+### Compilation steps
 $global:willClearBuiltDirectory = $True
 $global:willGenerateCubeMap = $True
 $global:willCompilePatch = $True
@@ -20,29 +20,29 @@ $global:willCompilePatchLodLevels = $True
 $global:willCopyAdditionalFiles = $True
 $global:willCreateBigFile = $True
 
-### 各种参数
-# 工具路径
+### Various parameters
+# Tool path
 $global:htmlPath = Join-Path (Join-Path $PSScriptRoot "panorama-to-cubemap") "index.html"
 $global:cmftPath = Join-Path (Join-Path $PSScriptRoot "cmft") "cmftRelease.exe"
 $global:wrathEdPath = Join-Path (Join-Path $PSScriptRoot "WrathEdDebug") "WrathEd.exe"
 
-# 文件夹路径
+# Folder path
 $global:patchDirectory = Join-Path $PSScriptRoot "static-patch"
 $global:additionalFilesDirectory = Join-Path $patchDirectory "additional"
 $global:generatedDirectory = Join-Path $patchDirectory "generated"
 $global:builtDirectory = Join-Path $patchDirectory "built"
 $global:basePatchStreamDirectory = Join-Path $patchDirectory "base-patch-streams"
 
-# 最终生成的 BIG 文件一开始存放的路径
+# The path where the generated BIG file is initially stored
 $global:outputDirectory = Join-Path $PSScriptRoot "output"
 $global:outputBigPath = Join-Path $outputDirectory "Skybox.big"
 
-# WED 编译参数
+# WrathEd compilation parameters
 $global:inputXml = Join-Path $patchDirectory "static.xml"
 $global:newStreamVersion = ".sky"
 $global:basePatchStreamName = "static.12.manifest"
 
-# 自动生成的天空盒贴图
+# Automatically generated skybox mapping
 $global:outputCubeMap = Join-Path $generatedDirectory "skybox"
 $global:skyboxXml = "$outputCubeMap.xml"
 $global:skyboxXmlContent = @"
@@ -54,67 +54,69 @@ $global:skyboxXmlContent = @"
 </AssetDeclaration>
 "@
 
-### UI 文本
-$global:mainTitle = "RAAA 天空盒补丁生成器"
+### UI text
+$global:mainTitle = "RAAA Skybox Patch Generator"
 $global:mainDescription = @"
-岚依的天空盒补丁生成器，应该能兼容大部分 mod（
-需要一些最基本的 RA3 Mod 知识（比如说如何让游戏或者 Mod 加载一个 BIG 文件之类的）
-使用方法：
-首先，点击 “创建十字贴图文件”，来把一个 2:1 的贴图转换成十字贴图。
-接着，点击 “创建天空盒补丁”，这将会弹出一个窗口用来选择之前创建的十字贴图文件。
-那么，只要选择了正确的文件，就能生成天空盒补丁了（
+Lanyi's skybox patch generator, which should be compatible with most mods.
+
+Requires some basic knowledge about modding Red Alert 3 (like how to get the game or another mod to load a BIG file).
+
+Usage:
+  1) Click "Create CubeMap File" to convert a 2:1 texture into a cubemap.
+  2) Click "Create Skybox Patch", which will open a window asking to select the cubemap created in step 1.
+  3) If the correct file was selected in step 2, the skybox patch can be generated.
 "@
-$global:cancelDescription = "假如生成天空盒贴图的时间过长的话，可以考虑点击`“取消`”按钮然后重试一次"
-$global:htmlButtonText = "创建十字贴图文件"
-$global:compileButtonText = "创建天空盒补丁"
-$global:cancelButtonText = "取消"
-$global:showAdvancedButtonText = "显示高级选项"
-$global:hideAdvancedButtonText = "隐藏高级选项"
-$global:compilePatchText = "编译补丁"
-$global:compilePatchLodLevelsText = "编译中低画质补丁"
-$global:basePatchStreamDescription = "基于此 manifest 创建补丁"
-$global:newStreamVersionText = "新的 manifest 版本号"
+$global:cancelDescription = "If it is taking too long to generate the skybox map, consider clicking the `“Cancel`” button and try again."
+$global:htmlButtonText = "Create CubeMap File"
+$global:compileButtonText = "Create Skybox Patch"
+$global:cancelButtonText = "Cancel"
+$global:showAdvancedButtonText = "Show Advanced Options"
+$global:hideAdvancedButtonText = "Hide Advanced Options"
+$global:compilePatchText = "Compile patch"
+$global:compilePatchLodLevelsText = "Compile low and medium LOD patches"
+$global:basePatchStreamDescription = "Create a patch based on this manifest"
+$global:newStreamVersionText = "New manifest version number"
 $global:editThisScriptText = @"
-假如要进一步修改，可以考虑直接修改
+If you want to make further changes, consider directly modifying the
 <Hyperlink x:Name="ThisScriptLink" NavigateUri="$PSCommandPath">
     $((Get-Item $PSCommandPath).Name)
 </Hyperlink>
-脚本文件（可以直接用记事本打开；修改后需要重启 $mainTitle）
+file (can be opened directly in Notepad; requires rebooting $mainTitle after modification）
 "@
-$global:statusMessage = "正在{0}"
-$global:statusFailedMessage = "{0}失败"
-$global:clearBuiltDirectoryStatus = "清除上一次编译的文件"
-$global:generateCubeMapStatus = "处理天空盒贴图"
-$global:wedStatus = "编译"
-$global:copyAdditionalFilesStatus = "复制额外文件"
-$global:createBigFileStatus = "创建 BIG 文件"
-$global:emptyBigMessage = "没有任何文件能被添加到 BIG 里，可能是哪些其他地方出了问题"
-$global:saveFailedMessage = "保存 BIG 文件失败：{0}"
-$global:chooseSkyboxTextureTitle = "选择天空盒贴图"
-$global:skyboxTextureFilter = "天空盒贴图（*.png;*.tga;*.jpg;*.bmp;*.dds;*.hdr）|*.png;*.tga;*.jpg;*.bmp;*.dds;*.hdr|所有文件（*.*）|*.*"
-$global:saveBigFileTitle = "保存 BIG 文件"
-$global:bigFileFilter = "BIG 文件（*.big）|*.big|所有文件（*.*）|*.*"
+$global:statusMessage = "is{0}"
+$global:statusFailedMessage = "{0}failed"
+$global:clearBuiltDirectoryStatus = "Clear last compiled file"
+$global:generateCubeMapStatus = "Process skybox cubemap"
+$global:wedStatus = "Compiling"
+$global:copyAdditionalFilesStatus = "Copy extra files"
+$global:createBigFileStatus = "Create BIG file"
+$global:emptyBigMessage = "No files added to the patch's BIG file, or maybe something else went wrong"
+$global:saveFailedMessage = "Failed to save BIG file: {0}"
+$global:chooseSkyboxTextureTitle = "Choose a skybox map"
+$global:skyboxTextureFilter = "Skybox texture （*.png;*.tga;*.jpg;*.bmp;*.dds;*.hdr）|*.png;*.tga;*.jpg;*.bmp;*.dds;*.hdr|All files （*.*）|*.*"
+$global:saveBigFileTitle = "Save BIG file"
+$global:bigFileFilter = "BIG file （*.big）|*.big|All files （*.*）|*.*"
 $global:creditsText = @"
 <Hyperlink NavigateUri="https://github.com/lanyizi/ra3-skybox-patch-builder">
     $mainTitle
 </Hyperlink> v0.11
 <LineBreak />
-这个生成器使用了
+This generator uses
 <Hyperlink NavigateUri="https://github.com/lanyizi/panorama-to-cubemap">
     panorama-to-cubemap
-</Hyperlink>、<Hyperlink NavigateUri="https://github.com/dariomanesku/cmft">
+</Hyperlink>,<Hyperlink NavigateUri="https://github.com/dariomanesku/cmft">
     cmft
-</Hyperlink> 以及
+</Hyperlink> and
 <Hyperlink NavigateUri="https://github.com/Qibbi/WrathEd2012">
     WrathEd
-</Hyperlink> 等工具
+</Hyperlink> as well.
 "@
 
 $xaml = [xml]@"
 <Window
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    x:Name="Window" Title="$mainTitle" Width="360" Height="400">
+    x:Name="Window" Title="$mainTitle" Width="380" Height="420">
     <ScrollViewer Margin="0" VerticalScrollBarVisibility="Auto">
         <StackPanel Orientation="Vertical" Margin="8">
             <TextBlock x:Name="MainDescription" Margin="4" TextWrapping="Wrap" />
@@ -176,12 +178,12 @@ Add-Type -AssemblyName PresentationFramework
 
 function Initialize-Wpf($window, $nativeWindow) {
     $window.Add_SourceInitialized({
-        # 用于获取窗口的原生句柄
+        # Used to get the native handle of the window
         $interopHelper = New-Object Windows.Interop.WindowInteropHelper -ArgumentList $window
         $nativeWindow.AssignHandle($interopHelper.Handle)
     }.GetNewClosure())
 
-    # 添加超链接的点击支持，以及对勾选框的支持
+    # Adds support for clicking on hyperlinks and support for checkboxes
     $window.Add_Loaded({
         function Add-HyperlinkEventHandler($owner) {
             $count = [Windows.Media.VisualTreeHelper]::GetChildrenCount($owner)
@@ -324,24 +326,24 @@ function Initialize-Wpf($window, $nativeWindow) {
 function global:Start-PatchBuild($context, $dispatcher) {
 
     $context.DoEvents = {
-        # 能让程序在阻塞的时候仍然能更新一下文本之类的
+        # Allows the program to update text while not in the foreground
         $dispatcher.Invoke([Windows.Threading.DispatcherPriority]::Background, [Action]{});
     }.GetNewClosure()
 
     $context.SynchronizationContext = New-Object Windows.Threading.DispatcherSynchronizationContext -ArgumentList $dispatcher
 
-    # 用于清空暂存文件
+    # Used for clearing temporary files
     $context.ClearBuiltDirectory = {
         & $context.SetStatus $clearBuiltDirectoryStatus
         & $context.DoEvents
-        # 删除文件，但是不删除软链接里面的文件（删除软链接本身）
+        # Delete the file, but do not delete the file in the soft link (delete the soft link itself)
         function Clear-MyDirectory($currentFolder) {
             foreach ($child in (Get-ChildItem $currentFolder)) {
                 $isDirectory = ($child.Attributes -band [IO.FileAttributes]::Directory) -ne 0
                 $isReparsePoint = ($child.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0
                 if ($isDirectory) {
                     if ($isReparsePoint) {
-                        # 仅删除软链接本身
+                        # Only delete the soft link itself
                         cmd.exe /c rmdir $child.FullName
                         continue
                     }
@@ -356,7 +358,7 @@ function global:Start-PatchBuild($context, $dispatcher) {
         Clear-MyDirectory $target.FullName
     }.GetNewClosure()
 
-    # 用于创建天空盒的立方体贴图
+    # CubeMap used to create the skybox
     $context.GenerateCubeMap = {
         & $context.SetStatus $generateCubeMapStatus
         $skyboxTexturePath = Get-SkyboxTexturePath $context.NativeWindow
@@ -389,7 +391,7 @@ function global:Start-PatchBuild($context, $dispatcher) {
         & $context.StartWrathEd
     }.GetNewClosure()
 
-    # 用于启动 WED、编译补丁
+    # Used to start WrathEd and to compile patches
     $context.StartWrathEd = {
         & $context.SetStatus $wedStatus
         Start-WrathEd $context.SynchronizationContext $context.ChangeTrackedProcesses $context.OnWrathEdCompleted
@@ -553,7 +555,7 @@ function global:Start-WrathEd($synchronizationContext, $changeTrackedProcesses, 
         param ($sender)
         $succeeded = $sender.Succeeded
         & $context.ChangeTrackedProcesses $Null
-        # WED 会自动生成 stringhashes 的 stream，这是不需要的，因此删了它
+        # WrathEd automatically generates a stream of stringhashes, which is not needed, so delete it
         $stringHashes = Join-Path $builtDataDirectory "stringhashes.*"
         Remove-Item $stringHashes
         if (-not $succeeded) {
@@ -607,29 +609,29 @@ function global:Create-BigFile($sourceDirectory, $nativeWindow) {
             }
         }
 
-        # BIG 头
+        # BIG header
         Write-ByteArray ([Text.Encoding]::ASCII.GetBytes("BIG4"))
-        # 先跳过文件大小
+        # Skip file size first
         $output.Position += 4
-        # 文件数量
+        # Number of files
         Write-BigEndianValue ([UInt32]($list.Count))
-        # 先跳过“第一个文件的位置”
+        # Skip the "first file location" first
         $output.Position += 4
 
-        # 文件列表
+        # File list
         foreach ($entry in $list) {
             & Check-StreamPosition
             $entry.EntryOffset = $output.Position
-            # 先跳过大小以及位置
+            # Skip size and position first
             $output.Position += 8
-            # 先写下文件名
+            # Write down the file name first
             Write-ByteArray $entry.PathBytes
-            # 0 结尾的字符串
+            # 0-terminate string
             $output.WriteByte([byte]0)
         }
 
         $firstEntryOffset = $output.Position
-        # 写入文件内容
+        # Write file contents
         $buffer = New-Object byte[] 81920
         foreach ($entry in $list) {
             $fromFile = $entry.File.OpenRead()
@@ -651,16 +653,16 @@ function global:Create-BigFile($sourceDirectory, $nativeWindow) {
 
         $bigFileSize = $output.Position
 
-        # 回到开头
+        # Go back to the beginning
         $output.Position = 4
         Write-BigEndianValue ([UInt32]($bigFileSize))
         $output.Position += 4
         Write-BigEndianValue ([UInt32]($firstEntryOffset))
 
-        # 继续写完文件列表
+        # Finish writing the list of files
         foreach ($entry in $list) {
             $output.Position = $entry.EntryOffset
-            # 写入大小以及位置
+            # Write size and position
             Write-BigEndianValue ([UInt32]($entry.FileOffset))
             Write-BigEndianValue ([UInt32]($entry.FileSize))
         }
@@ -674,7 +676,7 @@ function global:Create-BigFile($sourceDirectory, $nativeWindow) {
         $output.Dispose()
     }
 
-    # 弹出“保存”的对话框，选择一个地方保存
+    # Display the "Save" dialog box, select a place to save the patch
     $finalBigName = $Null
     $saveFileDialog = New-Object Windows.Forms.SaveFileDialog
     try {
@@ -697,13 +699,13 @@ function global:Create-BigFile($sourceDirectory, $nativeWindow) {
 }
 
 function Get-BigFileList($outList, $currentPrefix, $currentDirectory) {
-    # 文件夹
+    # Folders
     foreach ($child in $currentDirectory.GetDirectories()) {
         $name = $child.Name.ToLowerInvariant()
         $childPath = "$currentPrefix$name"
         Get-BigFileList $outList "$childPath\" $child
     }
-    # 文件
+    # Documents
     foreach ($child in $currentDirectory.GetFiles()) {
         $name = $child.Name.ToLowerInvariant()
         $childPath = "$currentPrefix$name"
