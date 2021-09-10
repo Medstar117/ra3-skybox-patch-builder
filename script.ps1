@@ -101,7 +101,7 @@ $global:creditsText = @"
     $mainTitle
 </Hyperlink> v0.11
 <LineBreak />
-This generator uses
+This generator uses tools such as
 <Hyperlink NavigateUri="https://github.com/lanyizi/panorama-to-cubemap">
     panorama-to-cubemap
 </Hyperlink>,<Hyperlink NavigateUri="https://github.com/dariomanesku/cmft">
@@ -109,7 +109,7 @@ This generator uses
 </Hyperlink> and
 <Hyperlink NavigateUri="https://github.com/Qibbi/WrathEd2012">
     WrathEd
-</Hyperlink> as well.
+</Hyperlink>.
 "@
 
 $xaml = [xml]@"
